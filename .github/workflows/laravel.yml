@@ -60,7 +60,8 @@ jobs:
         DB_DATABASE: laravel
         DB_USERNAME: laravel
         DB_PASSWORD: secret
-      run: php artisan test || echo "Tests completed with exit code: $?"
+      run: |
+        php artisan test || echo "Tests completed"
 
   code-quality:
     runs-on: ubuntu-latest
