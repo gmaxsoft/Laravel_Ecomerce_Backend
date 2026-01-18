@@ -7,13 +7,25 @@ use App\Coupon;
 use App\Http\Resources\OrderResource;
 use App\Order;
 use App\OrderItem;
+use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
+use Stripe\Exception\ApiErrorException;
 
 class OrderController
 {
+    protected $inventoryService;
+
+    public function __construct(InventoryService $inventoryService)
+    {
+        $this->inventoryService = $inventoryService;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -60,6 +72,21 @@ class OrderController
             ], 400);
         }
 
+        // Sprawdzenie dostępności produktów i rezerwacja stanu magazynowego
+        foreach ($cart->items as $cartItem) {
+            if (!$this->inventoryService->checkAvailability($cartItem->product, $cartItem->quantity)) {
+                return response()->json([
+                    'message' => 'Product ' . $cartItem->product->name . ' is out of stock',
+                ], 400);
+            }
+
+            if (!$this->inventoryService->reserveStock($cartItem->product, $cartItem->quantity)) {
+                return response()->json([
+                    'message' => 'Failed to reserve stock for ' . $cartItem->product->name,
+                ], 400);
+            }
+        }
+
         DB::beginTransaction();
         try {
             // Obliczanie sum
@@ -104,7 +131,7 @@ class OrderController
                 'payment_status' => 'pending',
             ]);
 
-            // Tworzenie pozycji zamówienia i aktualizacja stanu magazynowego
+            // Tworzenie pozycji zamówienia
             foreach ($cart->items as $cartItem) {
                 $product = $cartItem->product;
 
@@ -117,10 +144,50 @@ class OrderController
                     'price' => $cartItem->price,
                     'subtotal' => $cartItem->subtotal,
                 ]);
+            }
 
-                // Aktualizacja stanu magazynowego: zwolnienie rezerwacji i zmniejszenie dostępnego
-                $product->decrement('reserved_quantity', $cartItem->quantity);
-                $product->decrement('stock_quantity', $cartItem->quantity);
+            // Tworzenie Stripe Payment Intent
+            $paymentIntent = null;
+            try {
+                Stripe::setApiKey(config('services.stripe.secret'));
+
+                $paymentIntent = PaymentIntent::create([
+                    'amount' => (int)($total * 100), // Stripe używa centów
+                    'currency' => config('cashier.currency', 'usd'),
+                    'metadata' => [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'user_id' => $user->id,
+                    ],
+                    'description' => 'Order #' . $order->order_number,
+                ]);
+
+                // Zapisanie payment_intent_id w zamówieniu
+                $order->update([
+                    'stripe_payment_intent_id' => $paymentIntent->id,
+                    'payment_method' => 'stripe',
+                ]);
+
+                Log::info('Stripe Payment Intent created', [
+                    'order_id' => $order->id,
+                    'payment_intent_id' => $paymentIntent->id,
+                ]);
+            } catch (ApiErrorException $e) {
+                Log::error('Failed to create Stripe Payment Intent', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                // Zwolnienie rezerwacji stanu magazynowego w przypadku błędu
+                foreach ($cart->items as $cartItem) {
+                    $this->inventoryService->releaseReservedStock($cartItem->product, $cartItem->quantity);
+                }
+
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Failed to create payment intent',
+                    'error' => $e->getMessage(),
+                ], 500);
             }
 
             // Czyszczenie koszyka
@@ -132,6 +199,10 @@ class OrderController
             return response()->json([
                 'message' => 'Order created successfully',
                 'data' => new OrderResource($order->load(['items', 'coupon'])),
+                'payment_intent' => [
+                    'client_secret' => $paymentIntent->client_secret,
+                    'id' => $paymentIntent->id,
+                ],
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();

@@ -4,22 +4,33 @@ namespace App\Http\Controllers\Api;
 
 use App\Order;
 use App\Payment;
+use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Stripe\Webhook;
 
 class WebhookController
 {
+    protected $inventoryService;
+
+    public function __construct(InventoryService $inventoryService)
+    {
+        $this->inventoryService = $inventoryService;
+    }
+
     /**
      * Obsługa webhooków Stripe
      */
     public function handleWebhook(Request $request): JsonResponse
     {
+        Stripe::setApiKey(config('services.stripe.secret'));
+
         $payload = $request->getContent();
         $signature = $request->header('Stripe-Signature');
-        $webhookSecret = config('services.stripe.webhook_secret');
+        $webhookSecret = config('services.stripe.webhook.secret');
 
         try {
             // Weryfikacja sygnatury webhooka
@@ -28,185 +39,163 @@ class WebhookController
                 $signature,
                 $webhookSecret
             );
-        } catch (\Exception $e) {
-            Log::error('Stripe webhook signature verification failed', [
-                'error' => $e->getMessage(),
-            ]);
-
+        } catch (\UnexpectedValueException $e) {
+            Log::error('Stripe Webhook Error: Invalid payload', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Invalid payload'], 400);
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            Log::error('Stripe Webhook Error: Invalid signature', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Invalid signature'], 400);
         }
+
+        Log::info('Stripe Webhook Received: ' . $event->type, ['event_id' => $event->id]);
 
         // Obsługa różnych typów eventów
         switch ($event->type) {
             case 'payment_intent.succeeded':
-                $this->handlePaymentIntentSucceeded($event->data->object);
+                $paymentIntent = $event->data->object;
+                $this->handlePaymentIntentSucceeded($paymentIntent);
                 break;
 
             case 'payment_intent.payment_failed':
-                $this->handlePaymentIntentFailed($event->data->object);
+                $paymentIntent = $event->data->object;
+                $this->handlePaymentIntentFailed($paymentIntent);
                 break;
 
             case 'payment_intent.canceled':
-                $this->handlePaymentIntentCanceled($event->data->object);
+                $paymentIntent = $event->data->object;
+                $this->handlePaymentIntentCanceled($paymentIntent);
                 break;
 
             case 'charge.refunded':
-                $this->handleChargeRefunded($event->data->object);
+                $charge = $event->data->object;
+                $this->handleChargeRefunded($charge);
                 break;
 
             default:
-                Log::info('Unhandled Stripe webhook event', [
-                    'type' => $event->type,
-                ]);
+                Log::info('Stripe Webhook: Unhandled event type', ['event_type' => $event->type]);
+                break;
         }
 
-        return response()->json(['received' => true]);
+        return response()->json(['status' => 'success']);
     }
 
     /**
-     * Obsługa udanej płatności
+     * Obsługa udanej płatności.
      */
     protected function handlePaymentIntentSucceeded(PaymentIntent $paymentIntent): void
     {
-        $paymentIntentId = $paymentIntent->id;
-
-        Log::info('Payment intent succeeded', [
-            'payment_intent_id' => $paymentIntentId,
-            'amount' => $paymentIntent->amount,
-        ]);
-
-        // Znajdź zamówienie po payment_intent_id
-        $order = Order::where('stripe_payment_intent_id', $paymentIntentId)->first();
+        $order = Order::where('stripe_payment_intent_id', $paymentIntent->id)->first();
 
         if ($order) {
-            // Aktualizacja statusu zamówienia
             $order->update([
                 'payment_status' => 'paid',
-                'status' => 'processing', // Zmiana statusu na przetwarzane
+                'status' => 'processing', // Zmieniamy status zamówienia na przetwarzane
             ]);
 
-            // Utworzenie rekordu płatności
-            Payment::updateOrCreate(
-                [
-                    'order_id' => $order->id,
-                    'payment_intent_id' => $paymentIntentId,
-                ],
-                [
-                    'payment_method' => 'stripe',
-                    'amount' => $paymentIntent->amount / 100, // Stripe używa centów
-                    'currency' => strtoupper($paymentIntent->currency),
-                    'status' => 'succeeded',
-                    'paid_at' => now(),
-                    'metadata' => [
-                        'charge_id' => $paymentIntent->charges->data[0]->id ?? null,
-                    ],
-                ]
-            );
-
-            Log::info('Order payment status updated', [
+            Payment::create([
                 'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'payment_status' => 'paid',
+                'payment_method' => 'stripe',
+                'payment_intent_id' => $paymentIntent->id,
+                'amount' => $paymentIntent->amount / 100, // Kwota w centach, konwertujemy na walutę
+                'currency' => strtoupper($paymentIntent->currency),
+                'status' => 'succeeded',
+                'paid_at' => now(),
+                'metadata' => [
+                    'charge_id' => $paymentIntent->charges->data[0]->id ?? null,
+                ],
             ]);
+
+            // Potwierdź zamówienie i zmniejsz stan magazynowy
+            foreach ($order->items as $orderItem) {
+                $this->inventoryService->confirmOrder($orderItem->product, $orderItem->quantity);
+            }
+
+            Log::info('Stripe Webhook: PaymentIntent succeeded for order ' . $order->id, ['payment_intent_id' => $paymentIntent->id]);
+        } else {
+            Log::warning('Stripe Webhook: PaymentIntent succeeded for unknown order', ['payment_intent_id' => $paymentIntent->id]);
         }
     }
 
     /**
-     * Obsługa nieudanej płatności
+     * Obsługa nieudanej płatności.
      */
     protected function handlePaymentIntentFailed(PaymentIntent $paymentIntent): void
     {
-        $paymentIntentId = $paymentIntent->id;
-
-        Log::warning('Payment intent failed', [
-            'payment_intent_id' => $paymentIntentId,
-            'last_payment_error' => $paymentIntent->last_payment_error,
-        ]);
-
-        $order = Order::where('stripe_payment_intent_id', $paymentIntentId)->first();
+        $order = Order::where('stripe_payment_intent_id', $paymentIntent->id)->first();
 
         if ($order) {
             $order->update([
                 'payment_status' => 'failed',
+                'status' => 'cancelled', // Anulujemy zamówienie
             ]);
 
-            // Utworzenie rekordu płatności z statusem failed
-            Payment::updateOrCreate(
-                [
-                    'order_id' => $order->id,
-                    'payment_intent_id' => $paymentIntentId,
-                ],
-                [
-                    'payment_method' => 'stripe',
-                    'amount' => $paymentIntent->amount / 100,
-                    'currency' => strtoupper($paymentIntent->currency),
-                    'status' => 'failed',
-                    'failure_reason' => $paymentIntent->last_payment_error->message ?? 'Unknown error',
-                ]
-            );
+            Payment::create([
+                'order_id' => $order->id,
+                'payment_method' => 'stripe',
+                'payment_intent_id' => $paymentIntent->id,
+                'amount' => $paymentIntent->amount / 100,
+                'currency' => strtoupper($paymentIntent->currency),
+                'status' => 'failed',
+                'failure_reason' => $paymentIntent->last_payment_error->message ?? 'Unknown error',
+            ]);
+
+            // Zwolnij zarezerwowany stan magazynowy
+            foreach ($order->items as $orderItem) {
+                $this->inventoryService->releaseReservedStock($orderItem->product, $orderItem->quantity);
+            }
+
+            Log::warning('Stripe Webhook: PaymentIntent failed for order ' . $order->id, ['payment_intent_id' => $paymentIntent->id]);
+        } else {
+            Log::warning('Stripe Webhook: PaymentIntent failed for unknown order', ['payment_intent_id' => $paymentIntent->id]);
         }
     }
 
     /**
-     * Obsługa anulowanej płatności
+     * Obsługa anulowanej płatności.
      */
     protected function handlePaymentIntentCanceled(PaymentIntent $paymentIntent): void
     {
-        $paymentIntentId = $paymentIntent->id;
-
-        $order = Order::where('stripe_payment_intent_id', $paymentIntentId)->first();
+        $order = Order::where('stripe_payment_intent_id', $paymentIntent->id)->first();
 
         if ($order) {
             $order->update([
-                'payment_status' => 'cancelled',
-                'status' => 'cancelled',
+                'payment_status' => 'canceled',
+                'status' => 'cancelled', // Anulujemy zamówienie
             ]);
 
-            // Zwrócenie stanu magazynowego
-            foreach ($order->items as $item) {
-                $product = $item->product;
-                if ($product) {
-                    $product->cancelOrder($item->quantity);
-                }
+            // Zwolnij zarezerwowany stan magazynowy
+            foreach ($order->items as $orderItem) {
+                $this->inventoryService->releaseReservedStock($orderItem->product, $orderItem->quantity);
             }
+
+            Log::info('Stripe Webhook: PaymentIntent canceled for order ' . $order->id, ['payment_intent_id' => $paymentIntent->id]);
+        } else {
+            Log::warning('Stripe Webhook: PaymentIntent canceled for unknown order', ['payment_intent_id' => $paymentIntent->id]);
         }
     }
 
     /**
-     * Obsługa zwrotu płatności
+     * Obsługa zwrotu płatności.
      */
     protected function handleChargeRefunded($charge): void
     {
-        $chargeId = $charge->id;
-
-        Log::info('Charge refunded', [
-            'charge_id' => $chargeId,
-            'amount_refunded' => $charge->amount_refunded,
-        ]);
-
-        // Znajdź płatność po charge_id
-        $payment = Payment::whereJsonContains('metadata->charge_id', $chargeId)->first();
+        $payment = Payment::whereJsonContains('metadata->charge_id', $charge->id)->first();
 
         if ($payment) {
-            $payment->update([
-                'status' => 'refunded',
-            ]);
-
+            $payment->update(['status' => 'refunded']);
             $order = $payment->order;
-            if ($order) {
-                $order->update([
-                    'payment_status' => 'refunded',
-                    'status' => 'refunded',
-                ]);
 
-                // Zwrócenie stanu magazynowego
-                foreach ($order->items as $item) {
-                    $product = $item->product;
-                    if ($product) {
-                        $product->cancelOrder($item->quantity);
-                    }
+            if ($order) {
+                $order->update(['payment_status' => 'refunded']);
+
+                // Zwróć stan magazynowy
+                foreach ($order->items as $orderItem) {
+                    $this->inventoryService->cancelOrder($orderItem->product, $orderItem->quantity);
                 }
             }
+            Log::info('Stripe Webhook: Charge refunded for payment ' . $payment->id, ['charge_id' => $charge->id]);
+        } else {
+            Log::warning('Stripe Webhook: Charge refunded for unknown payment', ['charge_id' => $charge->id]);
         }
     }
 }
