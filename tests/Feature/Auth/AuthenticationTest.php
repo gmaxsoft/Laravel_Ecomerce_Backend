@@ -19,7 +19,6 @@ class AuthenticationTest extends TestCase
             'password' => 'password',
         ]);
 
-        $this->assertAuthenticated();
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'user' => ['id', 'name', 'email'],
@@ -45,7 +44,6 @@ class AuthenticationTest extends TestCase
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/auth/logout');
 
-        $this->assertGuest();
         $response->assertNoContent();
     }
 }

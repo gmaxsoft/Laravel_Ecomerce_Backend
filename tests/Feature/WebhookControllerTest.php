@@ -17,6 +17,16 @@ class WebhookControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Mock Stripe configs
+        $this->app['config']->set('services.stripe.secret', 'sk_test_mock');
+        $this->app['config']->set('services.stripe.webhook.secret', 'whsec_test_mock');
+        $this->app['config']->set('cashier.currency', 'usd');
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
@@ -94,9 +104,10 @@ class WebhookControllerTest extends TestCase
                 return $mock;
             });
 
-            $response = $this->postJson('/api/webhooks/stripe', [], [
-                'Stripe-Signature' => 'test_signature',
-            ]);
+            $response = $this->call('POST', '/api/webhooks/stripe', [], [], [], [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_STRIPE_SIGNATURE' => 'test_signature',
+            ], $payload);
 
             DB::rollBack();
 
@@ -122,9 +133,10 @@ class WebhookControllerTest extends TestCase
             return $mock;
         });
 
-        $response = $this->postJson('/api/webhooks/stripe', [], [
-            'Stripe-Signature' => 'invalid_signature',
-        ]);
+        $response = $this->call('POST', '/api/webhooks/stripe', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_STRIPE_SIGNATURE' => 'invalid_signature',
+        ], $payload);
 
         $response->assertStatus(400)
             ->assertJson(['error' => 'Invalid signature']);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\User;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +16,7 @@ use Illuminate\Validation\Rules;
 class RegisteredUserController extends Controller
 {
     
-    public function store(Request $request): Response
+    public function store(Request $request): JsonResponse|Response
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],

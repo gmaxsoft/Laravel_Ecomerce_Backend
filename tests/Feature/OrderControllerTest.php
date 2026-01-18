@@ -170,7 +170,7 @@ class OrderControllerTest extends TestCase
             DB::rollBack();
 
             $response->assertStatus(201)
-                ->assertJsonPath('data.discount', 10.00);
+                ->assertJsonPath('data.discount', 10);
         } finally {
             DB::rollBack();
         }
