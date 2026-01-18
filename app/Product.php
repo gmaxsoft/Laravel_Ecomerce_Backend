@@ -55,4 +55,36 @@ class Product extends Model
     {
         return $this->sale_price ?? $this->price;
     }
+
+    /**
+     * Bezpieczna metoda do rezerwacji stanu magazynowego
+     */
+    public function reserveStock(int $quantity): bool
+    {
+        return app(\App\Services\InventoryService::class)->reserveStock($this, $quantity);
+    }
+
+    /**
+     * Bezpieczna metoda do zwolnienia rezerwacji
+     */
+    public function releaseReservedStock(int $quantity): void
+    {
+        app(\App\Services\InventoryService::class)->releaseReservedStock($this, $quantity);
+    }
+
+    /**
+     * Bezpieczna metoda do potwierdzenia zamówienia
+     */
+    public function confirmOrder(int $quantity): void
+    {
+        app(\App\Services\InventoryService::class)->confirmOrder($this, $quantity);
+    }
+
+    /**
+     * Bezpieczna metoda do anulowania zamówienia
+     */
+    public function cancelOrder(int $quantity): void
+    {
+        app(\App\Services\InventoryService::class)->cancelOrder($this, $quantity);
+    }
 }
