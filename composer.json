@@ -1,12 +1,21 @@
 {
     "name": "laravel/laravel",
     "type": "project",
-    "description": "The Laravel Framework.",
+    "description": "Laravel E-commerce Backend - Sklep internetowy z odzieżą używaną",
     "keywords": [
         "framework",
-        "laravel"
+        "laravel",
+        "ecommerce",
+        "backend",
+        "api"
     ],
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Maxsoft",
+            "email": "info@maxsoft.pl"
+        }
+    ],
     "require": {
         "php": "^8.2",
         "laravel/framework": "^11.0",
