@@ -12,13 +12,7 @@ use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Stripe\Webhook;
 
-/**
- * @OA\Tag(
- *     name="Webhooks",
- *     description="API endpoints do obsługi webhooków"
- * )
- * @OA\PathItem(path="/api/webhooks/stripe")
- */
+
 class WebhookController
 {
     protected $inventoryService;
@@ -28,28 +22,7 @@ class WebhookController
         $this->inventoryService = $inventoryService;
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/webhooks/stripe",
-     *     summary="Obsługa webhooków Stripe",
-     *     tags={"Webhooks"},
-     *     @OA\RequestBody(
-     *         description="Dane webhooka Stripe",
-     *         required=true,
-     *         @OA\JsonContent()
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Webhook obsłużony",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="status", type="string", example="success")
-     *         )
-     *     ),
-     *     @OA\Response(response=400, description="Nieprawidłowy webhook")
-     * )
-     *
-     * Obsługa webhooków Stripe
-     */
+    
     public function handleWebhook(Request $request): JsonResponse
     {
         Stripe::setApiKey(config('services.stripe.secret'));

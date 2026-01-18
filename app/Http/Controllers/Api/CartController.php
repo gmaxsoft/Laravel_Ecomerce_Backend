@@ -10,31 +10,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
-/**
- * @OA\Tag(
- *     name="Cart",
- *     description="API endpoints do zarządzania koszykiem"
- * )
- * @OA\PathItem(path="/api/cart")
- * @OA\PathItem(path="/api/cart/items")
- * @OA\PathItem(path="/api/cart/items/{id}")
- */
+
 class CartController
 {
-    /**
-     * @OA\Get(
-     *     path="/api/cart",
-     *     summary="Pobierz koszyk użytkownika",
-     *     tags={"Cart"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Koszyk użytkownika"
-     *     )
-     * )
-     *
-     * Get or create user's cart.
-     */
+    
     public function index(Request $request): CartResource
     {
         $user = $request->user();
@@ -52,33 +31,7 @@ class CartController
         return new CartResource($cart->load('items.product'));
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/cart/items",
-     *     summary="Dodaj produkt do koszyka",
-     *     tags={"Cart"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"product_id", "quantity"},
-     *             @OA\Property(property="product_id", type="integer", example=1),
-     *             @OA\Property(property="quantity", type="integer", example=2)
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Produkt dodany do koszyka",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string"),
-     *             @OA\Property(property="data", ref="#/components/schemas/Cart")
-     *         )
-     *     ),
-     *     @OA\Response(response=400, description="Brak wystarczającej ilości")
-     * )
-     *
-     * Add item to cart.
-     */
+    
     public function addItem(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -136,38 +89,7 @@ class CartController
         }
     }
 
-    /**
-     * @OA\Put(
-     *     path="/api/cart/items/{id}",
-     *     summary="Aktualizuj ilość produktu w koszyku",
-     *     tags={"Cart"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="ID pozycji w koszyku",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"quantity"},
-     *             @OA\Property(property="quantity", type="integer", example=3)
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Ilość zaktualizowana",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string"),
-     *             @OA\Property(property="data", ref="#/components/schemas/Cart")
-     *         )
-     *     )
-     * )
-     *
-     * Update cart item quantity.
-     */
+    
     public function updateItem(Request $request, string $itemId): JsonResponse
     {
         $user = $request->user();
@@ -219,31 +141,7 @@ class CartController
         }
     }
 
-    /**
-     * @OA\Delete(
-     *     path="/api/cart/items/{id}",
-     *     summary="Usuń produkt z koszyka",
-     *     tags={"Cart"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="ID pozycji w koszyku",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Produkt usunięty z koszyka",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string"),
-     *             @OA\Property(property="data", ref="#/components/schemas/Cart")
-     *         )
-     *     )
-     * )
-     *
-     * Remove item from cart.
-     */
+    
     public function removeItem(string $itemId): JsonResponse
     {
         $user = request()->user();
@@ -277,23 +175,7 @@ class CartController
         }
     }
 
-    /**
-     * @OA\Delete(
-     *     path="/api/cart",
-     *     summary="Wyczyść koszyk",
-     *     tags={"Cart"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Koszyk wyczyszczony",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string")
-     *         )
-     *     )
-     * )
-     *
-     * Clear cart.
-     */
+    
     public function clear(Request $request): JsonResponse
     {
         $user = $request->user();
