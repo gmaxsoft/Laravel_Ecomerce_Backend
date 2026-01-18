@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use Illuminate\Http\Request;
@@ -14,6 +15,12 @@ Route::get('/user', function (Request $request) {
 Route::prefix('products')->group(function () {
     Route::get('/', [ProductController::class, 'index']);
     Route::get('/{id}', [ProductController::class, 'show']);
+});
+
+Route::prefix('coupons')->group(function () {
+    Route::get('/', [CouponController::class, 'index']);
+    Route::get('/{code}', [CouponController::class, 'show']);
+    Route::post('/validate', [CouponController::class, 'validate'])->middleware('auth:sanctum');
 });
 
 // Trasy chronione (wymagają uwierzytelnienia)

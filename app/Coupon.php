@@ -59,11 +59,65 @@ class Coupon extends Model
             return false;
         }
 
+        // Sprawdzenie limitu użyć na użytkownika
+        if ($userId && $this->usage_limit_per_user) {
+            $userUsageCount = Order::where('user_id', $userId)
+                ->where('coupon_id', $this->id)
+                ->count();
+
+            if ($userUsageCount >= $this->usage_limit_per_user) {
+                return false;
+            }
+        }
+
         if ($amount && $this->minimum_amount && $amount < $this->minimum_amount) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Sprawdza czy kupon jest ważny i zwraca szczegółowe informacje o błędach
+     */
+    public function validate($userId = null, $amount = null): array
+    {
+        $errors = [];
+
+        if (!$this->is_active) {
+            $errors[] = 'Kupon jest nieaktywny';
+        }
+
+        if ($this->starts_at && now()->lt($this->starts_at)) {
+            $errors[] = 'Kupon nie jest jeszcze aktywny';
+        }
+
+        if ($this->expires_at && now()->gt($this->expires_at)) {
+            $errors[] = 'Kupon wygasł';
+        }
+
+        if ($this->usage_limit && $this->usage_count >= $this->usage_limit) {
+            $errors[] = 'Kupon został wykorzystany maksymalną liczbę razy';
+        }
+
+        if ($userId && $this->usage_limit_per_user) {
+            $userUsageCount = Order::where('user_id', $userId)
+                ->where('coupon_id', $this->id)
+                ->count();
+
+            if ($userUsageCount >= $this->usage_limit_per_user) {
+                $errors[] = 'Osiągnięto limit użyć tego kuponu';
+            }
+        }
+
+        if ($amount && $this->minimum_amount && $amount < $this->minimum_amount) {
+            $errors[] = "Minimalna kwota zamówienia dla tego kuponu to " . number_format($this->minimum_amount, 2, ',', ' ') . " zł";
+        }
+
+        return [
+            'valid' => empty($errors),
+            'errors' => $errors,
+        ];
     }
 
     public function calculateDiscount($amount)
