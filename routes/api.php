@@ -5,21 +5,42 @@ use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
+Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
-})->middleware('auth:sanctum');
+});
+
+// Trasy autentykacji API
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [RegisteredUserController::class, 'store'])
+        ->middleware('guest');
+
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('guest');
+
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->middleware('auth:sanctum');
+
+    // Social Authentication - Google
+    Route::get('/google/redirect', [SocialAuthController::class, 'redirectToGoogle'])
+        ->middleware('guest')
+        ->name('google.api.redirect');
+
+    Route::get('/google/callback', [SocialAuthController::class, 'handleGoogleCallback'])
+        ->middleware('guest')
+        ->name('google.api.callback');
+});
 
 // Trasy publiczne
 Route::prefix('products')->group(function () {
     Route::get('/', [ProductController::class, 'index']);
     Route::get('/{id}', [ProductController::class, 'show']);
 });
-
-// Webhooks Stripe (bez middleware auth - weryfikacja przez sygnaturę)
-Route::post('/webhooks/stripe', [WebhookController::class, 'handleWebhook']);
 
 Route::prefix('coupons')->group(function () {
     Route::get('/', [CouponController::class, 'index']);
@@ -52,3 +73,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [ProductController::class, 'destroy']);
     });
 });
+
+// Webhooks Stripe (bez middleware auth - weryfikacja przez sygnaturę)
+Route::post('/webhooks/stripe', [WebhookController::class, 'handleWebhook']);
