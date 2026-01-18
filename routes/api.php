@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,9 @@ Route::prefix('products')->group(function () {
     Route::get('/', [ProductController::class, 'index']);
     Route::get('/{id}', [ProductController::class, 'show']);
 });
+
+// Webhooks Stripe (bez middleware auth - weryfikacja przez sygnaturę)
+Route::post('/webhooks/stripe', [WebhookController::class, 'handleWebhook']);
 
 Route::prefix('coupons')->group(function () {
     Route::get('/', [CouponController::class, 'index']);
