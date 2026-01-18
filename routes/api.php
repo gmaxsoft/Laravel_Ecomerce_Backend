@@ -10,15 +10,15 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// Public routes
+// Trasy publiczne
 Route::prefix('products')->group(function () {
     Route::get('/', [ProductController::class, 'index']);
     Route::get('/{id}', [ProductController::class, 'show']);
 });
 
-// Protected routes (require authentication)
+// Trasy chronione (wymagają uwierzytelnienia)
 Route::middleware('auth:sanctum')->group(function () {
-    // Cart routes
+    // Trasy koszyka
     Route::prefix('cart')->group(function () {
         Route::get('/', [CartController::class, 'index']);
         Route::post('/items', [CartController::class, 'addItem']);
@@ -27,14 +27,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/', [CartController::class, 'clear']);
     });
 
-    // Order routes
+    // Trasy zamówień
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
         Route::post('/', [OrderController::class, 'store']);
         Route::get('/{id}', [OrderController::class, 'show']);
     });
 
-    // Admin routes (for product management - can be protected with admin middleware)
+    // Trasy administratora (do zarządzania produktami - mogą być chronione middleware admin)
     Route::prefix('admin/products')->group(function () {
         Route::post('/', [ProductController::class, 'store']);
         Route::put('/{id}', [ProductController::class, 'update']);

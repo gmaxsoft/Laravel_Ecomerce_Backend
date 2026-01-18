@@ -2,6 +2,9 @@
 
 namespace App;
 
+use App\Events\OrderCreated;
+use App\Events\OrderStatusChanged;
+use App\Jobs\GenerateInvoicePdf;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -71,6 +74,35 @@ class Order extends Model
         static::creating(function ($order) {
             if (empty($order->order_number)) {
                 $order->order_number = 'ORD-' . strtoupper(uniqid());
+            }
+        });
+
+        static::created(function ($order) {
+            // Wywołanie eventu OrderCreated
+            event(new OrderCreated($order));
+
+            // Dodanie job do kolejki dla generowania PDF faktury
+            GenerateInvoicePdf::dispatch($order);
+        });
+
+        static::updating(function ($order) {
+            // Sprawdzenie czy status się zmienił
+            if ($order->isDirty('status')) {
+                $oldStatus = $order->getOriginal('status');
+                $newStatus = $order->status;
+
+                // Wywołanie eventu po aktualizacji (w updated hook)
+                $order->fireStatusChangedEvent = true;
+                $order->oldStatus = $oldStatus;
+            }
+        });
+
+        static::updated(function ($order) {
+            // Wywołanie eventu zmiany statusu po aktualizacji
+            if (isset($order->fireStatusChangedEvent)) {
+                event(new OrderStatusChanged($order, $order->oldStatus, $order->status));
+                unset($order->fireStatusChangedEvent);
+                unset($order->oldStatus);
             }
         });
     }

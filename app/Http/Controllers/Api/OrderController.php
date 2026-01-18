@@ -62,7 +62,7 @@ class OrderController
 
         DB::beginTransaction();
         try {
-            // Calculate totals
+            // Obliczanie sum
             $subtotal = $cart->total;
             $coupon = null;
             $discount = 0;
@@ -80,11 +80,11 @@ class OrderController
                 }
             }
 
-            $tax = $subtotal * 0.10; // 10% tax (example)
-            $shipping = 0; // Free shipping (can be calculated based on rules)
+            $tax = $subtotal * 0.10; // 10% podatku (przykład)
+            $shipping = 0; // Darmowa dostawa (może być obliczona na podstawie reguł)
             $total = $subtotal + $tax + $shipping - $discount;
 
-            // Create order
+            // Tworzenie zamówienia
             $order = Order::create([
                 'user_id' => $user->id,
                 'status' => 'pending',
@@ -104,7 +104,7 @@ class OrderController
                 'payment_status' => 'pending',
             ]);
 
-            // Create order items and update stock
+            // Tworzenie pozycji zamówienia i aktualizacja stanu magazynowego
             foreach ($cart->items as $cartItem) {
                 $product = $cartItem->product;
 
@@ -118,12 +118,12 @@ class OrderController
                     'subtotal' => $cartItem->subtotal,
                 ]);
 
-                // Update stock: release reserved and decrease available
+                // Aktualizacja stanu magazynowego: zwolnienie rezerwacji i zmniejszenie dostępnego
                 $product->decrement('reserved_quantity', $cartItem->quantity);
                 $product->decrement('stock_quantity', $cartItem->quantity);
             }
 
-            // Clear cart
+            // Czyszczenie koszyka
             $cart->items()->delete();
             $cart->delete();
 

@@ -17,27 +17,27 @@ class ProductController
     {
         $query = Product::query()->where('is_active', true);
 
-        // Filter by category
+        // Filtrowanie po kategorii
         if ($request->has('category')) {
             $query->where('category', $request->category);
         }
 
-        // Filter by size
+        // Filtrowanie po rozmiarze
         if ($request->has('size')) {
             $query->where('size', $request->size);
         }
 
-        // Filter by brand
+        // Filtrowanie po marce
         if ($request->has('brand')) {
             $query->where('brand', $request->brand);
         }
 
-        // Search by name
+        // Wyszukiwanie po nazwie
         if ($request->has('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        // Sort
+        // Sortowanie
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);

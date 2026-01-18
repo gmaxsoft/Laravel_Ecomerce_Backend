@@ -71,10 +71,10 @@ class CartController
                 ]
             );
 
-            // Refresh to get updated quantity
+            // Odświeżenie, aby uzyskać zaktualizowaną ilość
             $cartItem->refresh();
 
-            // Reserve stock
+            // Rezerwacja stanu magazynowego
             $product->increment('reserved_quantity', $validated['quantity']);
 
             DB::commit();
@@ -124,7 +124,7 @@ class CartController
                 'price' => $product->current_price,
             ]);
 
-            // Update reserved stock
+            // Aktualizacja zarezerwowanego stanu magazynowego
             if ($quantityDifference > 0) {
                 $product->increment('reserved_quantity', $quantityDifference);
             } else {
@@ -162,7 +162,7 @@ class CartController
 
         DB::beginTransaction();
         try {
-            // Release reserved stock
+            // Zwolnienie zarezerwowanego stanu magazynowego
             $product->decrement('reserved_quantity', $cartItem->quantity);
 
             $cartItem->delete();
@@ -198,7 +198,7 @@ class CartController
         if ($cart) {
             DB::beginTransaction();
             try {
-                // Release all reserved stock
+                // Zwolnienie wszystkich zarezerwowanych stanów magazynowych
                 foreach ($cart->items as $item) {
                     $item->product->decrement('reserved_quantity', $item->quantity);
                 }
