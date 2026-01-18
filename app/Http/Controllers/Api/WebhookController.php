@@ -7,13 +7,10 @@ use App\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Laravel\Cashier\Http\Controllers\WebhookController as CashierController;
-use Stripe\Event;
 use Stripe\PaymentIntent;
-use Stripe\Stripe;
 use Stripe\Webhook;
 
-class WebhookController extends CashierController
+class WebhookController
 {
     /**
      * Obsługa webhooków Stripe
