@@ -74,12 +74,7 @@ class ProductController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Lista produktów",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Product")),
-     *             @OA\Property(property="links", type="object"),
-     *             @OA\Property(property="meta", type="object")
-     *         )
+     *         @OA\JsonContent()
      *     )
      * )
      */
