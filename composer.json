@@ -13,7 +13,7 @@
     "authors": [
         {
             "name": "Maxsoft",
-            "email": "info@maxsoft.pl"
+            "email": "biuro@maxsoft.pl"
         }
     ],
     "require": {
@@ -23,6 +23,7 @@
         "laravel/tinker": "^2.9"
     },
     "require-dev": {
+        "darkaonline/l5-swagger": "^10.1",
         "dompdf/dompdf": "^3.1",
         "fakerphp/faker": "^1.23",
         "laravel/breeze": "^2.3",
