@@ -1,15 +1,4 @@
 <?php return array (
-  'darkaonline/l5-swagger' => 
-  array (
-    'aliases' => 
-    array (
-      'L5Swagger' => 'L5Swagger\\L5SwaggerFacade',
-    ),
-    'providers' => 
-    array (
-      0 => 'L5Swagger\\L5SwaggerServiceProvider',
-    ),
-  ),
   'laravel/breeze' => 
   array (
     'providers' => 

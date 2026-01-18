@@ -9,9 +9,27 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 
+/**
+ * @OA\Tag(
+ *     name="Authentication",
+ *     description="API endpoints do uwierzytelniania"
+ * )
+ * @OA\PathItem(path="/api/auth/google/redirect")
+ * @OA\PathItem(path="/api/auth/google/callback")
+ */
 class SocialAuthController extends Controller
 {
     /**
+     * @OA\Get(
+     *     path="/api/auth/google/redirect",
+     *     summary="Przekierowanie do Google OAuth",
+     *     tags={"Authentication"},
+     *     @OA\Response(
+     *         response=302,
+     *         description="Przekierowanie do Google"
+     *     )
+     * )
+     *
      * Przekierowanie do Google OAuth
      */
     public function redirectToGoogle(): RedirectResponse
@@ -20,6 +38,22 @@ class SocialAuthController extends Controller
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/auth/google/callback",
+     *     summary="Obsługa callback z Google OAuth",
+     *     tags={"Authentication"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Zalogowany pomyślnie przez Google",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="user", ref="#/components/schemas/User"),
+     *             @OA\Property(property="token", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(response=500, description="Błąd uwierzytelniania")
+     * )
+     *
      * Obsługa callback z Google OAuth
      */
     public function handleGoogleCallback(): JsonResponse|RedirectResponse

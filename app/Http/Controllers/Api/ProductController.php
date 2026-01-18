@@ -9,74 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
-/**
- * @OA\Tag(
- *     name="Products",
- *     description="API endpoints do zarządzania produktami"
- * )
- */
 class ProductController extends Controller
 {
     /**
-     * @OA\Get(
-     *     path="/api/products",
-     *     summary="Lista produktów",
-     *     tags={"Products"},
-     *     @OA\Parameter(
-     *         name="category",
-     *         in="query",
-     *         description="Filtruj po kategorii",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="size",
-     *         in="query",
-     *         description="Filtruj po rozmiarze",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="brand",
-     *         in="query",
-     *         description="Filtruj po marce",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="search",
-     *         in="query",
-     *         description="Wyszukaj po nazwie",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="sort_by",
-     *         in="query",
-     *         description="Sortuj po (created_at, price, name)",
-     *         required=false,
-     *         @OA\Schema(type="string", default="created_at")
-     *     ),
-     *     @OA\Parameter(
-     *         name="sort_order",
-     *         in="query",
-     *         description="Kierunek sortowania (asc, desc)",
-     *         required=false,
-     *         @OA\Schema(type="string", default="desc")
-     *     ),
-     *     @OA\Parameter(
-     *         name="per_page",
-     *         in="query",
-     *         description="Liczba produktów na stronę",
-     *         required=false,
-     *         @OA\Schema(type="integer", default=15)
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Lista produktów",
-     *         @OA\JsonContent()
-     *     )
-     * )
+     * Display a listing of the resource.
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -113,39 +49,7 @@ class ProductController extends Controller
     }
 
     /**
-     * @OA\Post(
-     *     path="/api/admin/products",
-     *     summary="Utwórz produkt",
-     *     tags={"Products"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"name", "price", "stock_quantity"},
-     *             @OA\Property(property="name", type="string", example="Koszulka T-Shirt"),
-     *             @OA\Property(property="description", type="string", example="Opis produktu"),
-     *             @OA\Property(property="price", type="number", format="float", example=99.99),
-     *             @OA\Property(property="sale_price", type="number", format="float", example=79.99),
-     *             @OA\Property(property="category", type="string", example="Odzież"),
-     *             @OA\Property(property="size", type="string", example="M"),
-     *             @OA\Property(property="condition", type="string", enum={"excellent", "good", "fair"}, example="good"),
-     *             @OA\Property(property="brand", type="string", example="Nike"),
-     *             @OA\Property(property="color", type="string", example="Czarny"),
-     *             @OA\Property(property="images", type="array", @OA\Items(type="string")),
-     *             @OA\Property(property="stock_quantity", type="integer", example=10),
-     *             @OA\Property(property="sku", type="string", example="SKU-12345")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Produkt utworzony pomyślnie",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string"),
-     *             @OA\Property(property="data", ref="#/components/schemas/Product")
-     *         )
-     *     ),
-     *     @OA\Response(response=422, description="Błąd walidacji")
-     * )
+     * Store a newly created resource in storage.
      */
     public function store(Request $request): JsonResponse
     {
@@ -173,24 +77,7 @@ class ProductController extends Controller
     }
 
     /**
-     * @OA\Get(
-     *     path="/api/products/{id}",
-     *     summary="Szczegóły produktu",
-     *     tags={"Products"},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="ID produktu",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Szczegóły produktu",
-     *         @OA\JsonContent(ref="#/components/schemas/Product")
-     *     ),
-     *     @OA\Response(response=404, description="Produkt nie znaleziony")
-     * )
+     * Display the specified resource.
      */
     public function show(string $id): ProductResource
     {
@@ -200,24 +87,7 @@ class ProductController extends Controller
     }
 
     /**
-     * @OA\Put(
-     *     path="/api/admin/products/{id}",
-     *     summary="Aktualizuj produkt",
-     *     tags={"Products"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/Product")
-     *     ),
-     *     @OA\Response(response=200, description="Produkt zaktualizowany"),
-     *     @OA\Response(response=404, description="Produkt nie znaleziony")
-     * )
+     * Update the specified resource in storage.
      */
     public function update(Request $request, string $id): JsonResponse
     {
@@ -248,20 +118,7 @@ class ProductController extends Controller
     }
 
     /**
-     * @OA\Delete(
-     *     path="/api/admin/products/{id}",
-     *     summary="Usuń produkt",
-     *     tags={"Products"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(response=200, description="Produkt usunięty"),
-     *     @OA\Response(response=404, description="Produkt nie znaleziony")
-     * )
+     * Remove the specified resource from storage.
      */
     public function destroy(string $id): JsonResponse
     {

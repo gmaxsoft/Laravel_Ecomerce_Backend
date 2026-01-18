@@ -57,6 +57,24 @@ class CouponController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/coupons",
+     *     summary="Lista kuponów",
+     *     tags={"Coupons"},
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Liczba kuponów na stronę",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Lista kuponów",
+     *         @OA\JsonContent()
+     *     )
+     * )
+     *
      * Wyświetla wszystkie aktywne kupony
      */
     public function index(Request $request)
@@ -73,6 +91,25 @@ class CouponController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/coupons/{code}",
+     *     summary="Szczegóły kuponu",
+     *     tags={"Coupons"},
+     *     @OA\Parameter(
+     *         name="code",
+     *         in="path",
+     *         required=true,
+     *         description="Kod kuponu",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Szczegóły kuponu",
+     *         @OA\JsonContent(ref="#/components/schemas/Coupon")
+     *     ),
+     *     @OA\Response(response=404, description="Kupon nie znaleziony")
+     * )
+     *
      * Wyświetla szczegóły kuponu
      */
     public function show(string $code): CouponResource|JsonResponse

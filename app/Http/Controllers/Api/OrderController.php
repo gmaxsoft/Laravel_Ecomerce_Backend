@@ -17,6 +17,14 @@ use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Stripe\Exception\ApiErrorException;
 
+/**
+ * @OA\Tag(
+ *     name="Orders",
+ *     description="API endpoints do zarządzania zamówieniami"
+ * )
+ * @OA\PathItem(path="/api/orders")
+ * @OA\PathItem(path="/api/orders/{id}")
+ */
 class OrderController
 {
     protected $inventoryService;
@@ -27,6 +35,25 @@ class OrderController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/orders",
+     *     summary="Lista zamówień użytkownika",
+     *     tags={"Orders"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Liczba zamówień na stronę",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Lista zamówień",
+     *         @OA\JsonContent()
+     *     )
+     * )
+     *
      * Display a listing of the resource.
      */
     public function index(Request $request): AnonymousResourceCollection
@@ -42,6 +69,42 @@ class OrderController
     }
 
     /**
+     * @OA\Post(
+     *     path="/api/orders",
+     *     summary="Utwórz zamówienie",
+     *     tags={"Orders"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"cart_id", "shipping_name", "shipping_email", "shipping_address", "shipping_city", "shipping_postal_code", "shipping_country"},
+     *             @OA\Property(property="cart_id", type="integer", example=1),
+     *             @OA\Property(property="coupon_code", type="string", example="DISCOUNT10"),
+     *             @OA\Property(property="amount", type="number", format="float", example=100.00),
+     *             @OA\Property(property="shipping_name", type="string", example="Jan Kowalski"),
+     *             @OA\Property(property="shipping_email", type="string", example="jan@example.com"),
+     *             @OA\Property(property="shipping_phone", type="string", example="+48123456789"),
+     *             @OA\Property(property="shipping_address", type="string", example="ul. Główna 1"),
+     *             @OA\Property(property="shipping_city", type="string", example="Warszawa"),
+     *             @OA\Property(property="shipping_postal_code", type="string", example="00-001"),
+     *             @OA\Property(property="shipping_country", type="string", example="Polska")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Zamówienie utworzone",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="data", ref="#/components/schemas/Order"),
+     *             @OA\Property(property="payment_intent", type="object",
+     *                 @OA\Property(property="client_secret", type="string"),
+     *                 @OA\Property(property="id", type="string")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="Błąd walidacji lub pusty koszyk")
+     * )
+     *
      * Store a newly created resource in storage.
      */
     public function store(Request $request): JsonResponse
@@ -214,6 +277,26 @@ class OrderController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/orders/{id}",
+     *     summary="Szczegóły zamówienia",
+     *     tags={"Orders"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID zamówienia",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Szczegóły zamówienia",
+     *         @OA\JsonContent(ref="#/components/schemas/Order")
+     *     ),
+     *     @OA\Response(response=404, description="Zamówienie nie znalezione")
+     * )
+     *
      * Display the specified resource.
      */
     public function show(string $id, Request $request): OrderResource
