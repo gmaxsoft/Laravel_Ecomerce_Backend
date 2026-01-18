@@ -31,7 +31,7 @@ class OrderResource extends JsonResource
                     'discount' => (float) $this->discount,
                 ];
             }),
-            'shipping' => [
+            'shipping_address' => [
                 'name' => $this->shipping_name,
                 'email' => $this->shipping_email,
                 'phone' => $this->shipping_phone,
