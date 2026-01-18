@@ -13,9 +13,13 @@
         "laravel/tinker": "^2.9"
     },
     "require-dev": {
+        "dompdf/dompdf": "^3.1",
         "fakerphp/faker": "^1.23",
+        "laravel/breeze": "^2.3",
+        "laravel/cashier": "^16.2",
         "laravel/pint": "^1.13",
         "laravel/sail": "^1.26",
+        "laravel/socialite": "^5.24",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.0",
         "phpunit/phpunit": "^11.0.1"
