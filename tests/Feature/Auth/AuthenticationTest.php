@@ -41,8 +41,12 @@ class AuthenticationTest extends TestCase
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();
+        
+        // Utwórz token dla użytkownika
+        $token = $user->createToken('test-token')->plainTextToken;
 
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/auth/logout');
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/auth/logout');
 
         $response->assertNoContent();
     }

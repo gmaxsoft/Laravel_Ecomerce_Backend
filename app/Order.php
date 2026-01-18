@@ -13,6 +13,8 @@ class Order extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static $statusChanges = [];
+
     protected $fillable = [
         'order_number',
         'user_id',
@@ -88,21 +90,17 @@ class Order extends Model
         static::updating(function ($order) {
             // Sprawdzenie czy status się zmienił
             if ($order->isDirty('status')) {
-                $oldStatus = $order->getOriginal('status');
-                $newStatus = $order->status;
-
-                // Wywołanie eventu po aktualizacji (w updated hook)
-                $order->fireStatusChangedEvent = true;
-                $order->oldStatus = $oldStatus;
+                // Przechowujemy stary status w zmiennej statycznej, klucz to ID zamówienia
+                static::$statusChanges[$order->id] = $order->getOriginal('status');
             }
         });
 
         static::updated(function ($order) {
             // Wywołanie eventu zmiany statusu po aktualizacji
-            if (isset($order->fireStatusChangedEvent)) {
-                event(new OrderStatusChanged($order, $order->oldStatus, $order->status));
-                unset($order->fireStatusChangedEvent);
-                unset($order->oldStatus);
+            if (isset(static::$statusChanges[$order->id])) {
+                $oldStatus = static::$statusChanges[$order->id];
+                event(new OrderStatusChanged($order, $oldStatus, $order->status));
+                unset(static::$statusChanges[$order->id]);
             }
         });
     }

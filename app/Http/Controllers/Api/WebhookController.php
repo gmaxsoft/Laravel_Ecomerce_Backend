@@ -81,7 +81,7 @@ class WebhookController
     /**
      * Obsługa udanej płatności.
      */
-    protected function handlePaymentIntentSucceeded(PaymentIntent $paymentIntent): void
+    protected function handlePaymentIntentSucceeded(object $paymentIntent): void
     {
         $order = Order::where('stripe_payment_intent_id', $paymentIntent->id)->first();
 
@@ -118,7 +118,7 @@ class WebhookController
     /**
      * Obsługa nieudanej płatności.
      */
-    protected function handlePaymentIntentFailed(PaymentIntent $paymentIntent): void
+    protected function handlePaymentIntentFailed(object $paymentIntent): void
     {
         $order = Order::where('stripe_payment_intent_id', $paymentIntent->id)->first();
 
@@ -152,7 +152,7 @@ class WebhookController
     /**
      * Obsługa anulowanej płatności.
      */
-    protected function handlePaymentIntentCanceled(PaymentIntent $paymentIntent): void
+    protected function handlePaymentIntentCanceled(object $paymentIntent): void
     {
         $order = Order::where('stripe_payment_intent_id', $paymentIntent->id)->first();
 

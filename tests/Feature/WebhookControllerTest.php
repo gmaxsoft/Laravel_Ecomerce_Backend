@@ -94,15 +94,13 @@ class WebhookControllerTest extends TestCase
                 ],
             ]);
 
-            // Mock webhook signature verification
-            $this->app->bind(Webhook::class, function () use ($payload) {
-                $mock = Mockery::mock(Webhook::class);
-                $mock->shouldReceive('constructEvent')
-                    ->once()
-                    ->andReturn(json_decode($payload));
-
-                return $mock;
-            });
+            // Mock statycznej metody Webhook::constructEvent
+            $eventObject = json_decode($payload, false);
+            $mockWebhook = Mockery::mock('alias:Stripe\Webhook');
+            $mockWebhook->shouldReceive('constructEvent')
+                ->once()
+                ->with($payload, 'test_signature', 'whsec_test_mock')
+                ->andReturn($eventObject);
 
             $response = $this->call('POST', '/api/webhooks/stripe', [], [], [], [
                 'CONTENT_TYPE' => 'application/json',
@@ -123,15 +121,11 @@ class WebhookControllerTest extends TestCase
     {
         $payload = 'invalid_payload';
 
-        // Mock webhook signature verification failure
-        $this->app->bind(Webhook::class, function () {
-            $mock = Mockery::mock(Webhook::class);
-            $mock->shouldReceive('constructEvent')
-                ->once()
-                ->andThrow(new \UnexpectedValueException('Invalid payload'));
-
-            return $mock;
-        });
+        // Mock statycznej metody Webhook::constructEvent do rzucenia wyjątku
+        $mockWebhook = Mockery::mock('alias:Stripe\Webhook');
+        $mockWebhook->shouldReceive('constructEvent')
+            ->once()
+            ->andThrow(new \UnexpectedValueException('Invalid payload'));
 
         $response = $this->call('POST', '/api/webhooks/stripe', [], [], [], [
             'CONTENT_TYPE' => 'application/json',
@@ -139,6 +133,6 @@ class WebhookControllerTest extends TestCase
         ], $payload);
 
         $response->assertStatus(400)
-            ->assertJson(['error' => 'Invalid signature']);
+            ->assertJson(['error' => 'Invalid payload']);
     }
 }

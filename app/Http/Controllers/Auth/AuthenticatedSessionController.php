@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
 
 class AuthenticatedSessionController extends Controller
 {
     
-    public function store(LoginRequest $request): Response
+    public function store(LoginRequest $request): JsonResponse|Response
     {
         $request->authenticate();
 
@@ -37,7 +38,10 @@ class AuthenticatedSessionController extends Controller
     {
         // Dla API używamy Sanctum, dla web używamy sesji
         if ($request->expectsJson() || $request->is('api/*')) {
-            $request->user()->currentAccessToken()->delete();
+            $token = $request->user()->currentAccessToken();
+            if ($token) {
+                $token->delete();
+            }
             return response()->noContent();
         }
 
