@@ -46,6 +46,12 @@ class WebhookControllerTest extends TestCase
                 'total' => 110.00,
                 'payment_status' => 'pending',
                 'stripe_payment_intent_id' => 'pi_test_123',
+                'shipping_name' => 'Test User',
+                'shipping_email' => 'test@example.com',
+                'shipping_address' => '123 Test St',
+                'shipping_city' => 'Test City',
+                'shipping_postal_code' => '12345',
+                'shipping_country' => 'US',
             ]);
 
             OrderItem::create([
@@ -121,6 +127,6 @@ class WebhookControllerTest extends TestCase
         ]);
 
         $response->assertStatus(400)
-            ->assertJson(['error' => 'Invalid payload']);
+            ->assertJson(['error' => 'Invalid signature']);
     }
 }

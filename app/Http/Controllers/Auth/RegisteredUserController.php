@@ -31,6 +31,16 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
+        // Dla API używamy Sanctum, dla web używamy sesji
+        if ($request->expectsJson() || $request->is('api/*')) {
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            return response()->json([
+                'user' => $user,
+                'token' => $token,
+            ], 201);
+        }
+
         Auth::login($user);
 
         return response()->noContent();

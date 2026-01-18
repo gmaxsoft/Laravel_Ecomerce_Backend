@@ -16,6 +16,17 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        // Dla API używamy Sanctum, dla web używamy sesji
+        if ($request->expectsJson() || $request->is('api/*')) {
+            $user = $request->user();
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            return response()->json([
+                'user' => $user,
+                'token' => $token,
+            ], 200);
+        }
+
         $request->session()->regenerate();
 
         return response()->noContent();
@@ -24,6 +35,12 @@ class AuthenticatedSessionController extends Controller
     
     public function destroy(Request $request): Response
     {
+        // Dla API używamy Sanctum, dla web używamy sesji
+        if ($request->expectsJson() || $request->is('api/*')) {
+            $request->user()->currentAccessToken()->delete();
+            return response()->noContent();
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
