@@ -34,6 +34,7 @@ Projekt backendowy sklepu internetowego z odzieżą używaną, zbudowany na fram
 - **PHP-FPM** - Procesor PHP
 - **Composer** - Menadżer zależności PHP
 - **Laravel Pint** - Narzędzie do formatowania kodu
+- **L5-Swagger** - Dokumentacja API (Swagger/OpenAPI)
 
 ### Testy
 - **PHPUnit 11.x** - Framework testowy
@@ -227,6 +228,71 @@ POST   /api/coupons/validate       - Walidacja kuponu (wymaga autoryzacji)
 ```
 POST   /api/webhooks/stripe        - Webhook Stripe (weryfikacja sygnatury)
 ```
+
+## 📖 Dokumentacja API (Swagger/OpenAPI)
+
+Projekt wykorzystuje **Swagger/OpenAPI** do automatycznego generowania dokumentacji technicznej API.
+
+### Dostęp do dokumentacji
+
+Po uruchomieniu aplikacji dokumentacja Swagger jest dostępna pod adresem:
+
+```
+http://localhost/api/documentation
+```
+
+### Generowanie dokumentacji
+
+Aby wygenerować lub zaktualizować dokumentację Swagger:
+
+```bash
+docker-compose exec app php artisan l5-swagger:generate
+```
+
+### Technologie
+
+- **L5-Swagger** (`darkaonline/l5-swagger`) - Integracja Swagger z Laravel
+- **Swagger PHP** (`zircote/swagger-php`) - Biblioteka do generowania dokumentacji OpenAPI
+- **Swagger UI** - Interaktywny interfejs do testowania API
+
+### Funkcjonalności Swagger
+
+- ✅ Automatyczne generowanie dokumentacji z adnotacji PHPDoc
+- ✅ Interaktywny interfejs do testowania endpointów API
+- ✅ Dokumentacja schematów danych (models/resources)
+- ✅ Przykłady requestów i odpowiedzi
+- ✅ Obsługa autentykacji (Bearer Token/Sanctum)
+- ✅ Walidacja i opis parametrów
+
+### Adnotacje Swagger
+
+Dokumentacja jest generowana na podstawie adnotacji `@OA\*` w kontrolerach API:
+
+```php
+/**
+ * @OA\Get(
+ *     path="/api/products",
+ *     summary="Lista produktów",
+ *     tags={"Products"},
+ *     @OA\Response(response=200, description="Lista produktów")
+ * )
+ */
+public function index(Request $request)
+{
+    // ...
+}
+```
+
+### Status
+
+⚠️ **W trakcie implementacji** - Adnotacje Swagger są dodawane stopniowo do wszystkich kontrolerów API.
+
+**Aktualnie udokumentowane:**
+- ✅ Products API (podstawowe endpointy)
+- 🔄 Cart API (w przygotowaniu)
+- 🔄 Orders API (w przygotowaniu)
+- 🔄 Coupons API (w przygotowaniu)
+- 🔄 Authentication API (w przygotowaniu)
 
 ## 🗄 Model bazy danych
 
